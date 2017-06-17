@@ -40,3 +40,41 @@ def dataset_download(dataset_folder,filename,download_url):
     else:        
         with DLProgress(unit='B', unit_scale=True, miniters=1, desc=filename) as pbar:
             urlretrieve(url, folder+'/'+filename , pbar.hook)
+
+            
+            
+# To download from authenticated websites which require username and password      
+def download_extract_zip_url(dataset_folder,download_url,user=None,passwrd=None):
+    import requests
+    import zipfile, io
+    import os
+    from getpass import getpass
+    # The direct link to the Kaggle data set
+    
+    print ("To download data from",download_url)
+
+    # The local path where the data set is saved.
+    local_filename = download_url.split('/')[-1]
+    local_filename_wo_ext = local_filename.split('.')[0]
+    print("To save as",local_filename)
+    
+    
+    if not (user or passwrd):
+        user    = getpass()
+        passwrd = getpass()
+    
+    # Kaggle Username and Password
+    kaggle_info = {'UserName': user, 'Password': passwrd}
+    if os.path.exists(dataset_folder+'/'+local_filename_wo_ext):
+        print('- %s database exists \n' %(local_filename_wo_ext))
+    else:
+        # Attempts to download the CSV file. Gets rejected because we are not logged in.
+        r = requests.get(download_url)
+
+        # Login to Kaggle and retrieve the data.
+        r = requests.post(r.url, data = kaggle_info)
+
+
+        z = zipfile.ZipFile(io.BytesIO(r.content))
+        z.extractall(dataset_folder+'/'+local_filename_wo_ext)
+        print('--> Downloaded %s dataset <-- \n' %(local_filename_wo_ext))
